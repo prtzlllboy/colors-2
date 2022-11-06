@@ -1,3 +1,10 @@
+let pallettes = localStorage.getItem('palletes')
+
+
+if (!pallettes) {
+   localStorage.setItem('palletes', JSON.stringify([]))
+}
+
 const cols = document.querySelectorAll('.col')
 
 document.addEventListener('keydown', event => {
@@ -20,7 +27,27 @@ document.addEventListener('click', event => {
       node.classList.toggle('fa-lock')
    } else if (type === 'copy') {
       copyToClickboard(event.target.textContent)
-   }
+   } else if (type === 'save') {
+      const node = event.target.tagName.toLowerCase() === 'i' 
+      ? event.target
+      : event.target.children[0]  
+
+
+      node.classList.toggle('fa-regular')
+      node.classList.toggle('fa-solid')
+
+      let pallettes = localStorage.getItem('palletes')
+      pallettes = JSON.parse(pallettes)
+
+      if (document.location.hash) {
+         if (pallettes.indexOf(document.location.hash) === -1) {
+            pallettes.unshift(document.location.hash)
+         } else {
+            pallettes.splice(pallettes.indexOf(document.location.hash), 1)
+         }
+         localStorage.setItem('palletes', JSON.stringify(pallettes))
+      }
+   } 
 } )
 
 function gerenerateRandomColor() {
@@ -48,58 +75,76 @@ function setRandomColors(isInitial){
       const isLocked = col.querySelector('i').classList.contains('fa-lock')
       const text =col.querySelector('h2')
       const button =col.querySelector('button')
+      const book =col.querySelector('.fa-bookmark')
+      const pallette =col.querySelector('.fa-palette')
+      const lock = col.querySelector('.fa-solid')
     
     if (isLocked) {
       colors.push(text.textContent)
       return
     }
 
+    let allPallettes = localStorage.getItem('palletes')
+    allPallettes = JSON.parse(pallettes)
+
+    if (allPallettes) {
+      if (allPallettes.indexOf(document.location.hash) !== -1 && book) {
+         book.classList.toggle('fa-solid')
+         book.classList.toggle('fa-regular')
+       } else if (allPallettes.indexOf(document.location.hash) === -1 && book) {
+         book.classList.remove('fa-regular')
+         book.classList.remove('fa-solid')
+         book.classList.add('fa-regular')
+       }
+    }
+
+
     const color = isInitial 
-      ? colors[index]
+       ? colors[index]
        ? colors[index]
        :chroma.random()
        : chroma.random()
 
-    if (!isInitial) {
-      colors.push(color) 
-    }
+      colors.push(color)     
 
     
     
     text.textContent = color
     col.style.background = color
 
+    setTextColor(lock, color)
     setTextColor(text, color)
     setTextColor(button, color)
+    if (book && pallette) {
+      setTextColor(book, color)
+      setTextColor(pallette, color)
+    }
    })
 
    updateColorsHash(colors)
 }
 
-   function setTextColor (text, color) {
+function setTextColor (text, color) {
    const luminance = chroma(color).luminance()
    text.style.color = luminance > 0.5 ? 'black' : 'white'
-   }
+}
 
-   function updateColorsHash(colors = []) {
-      document.location.hash = colors
-      .map((col) => {
-        return col.toString().substring(1)
-      }).join('-')  
-      }
+function updateColorsHash(colors = []) {
+   document.location.hash = colors
+   .map((col) => {
+      return col.toString().substring(1)
+   }).join('-')  
+}
 
-      function getColorsFromHash() {
-         if (document.location.hash.length > 1) {
-            return document.location.hash
-            .substring(1)
-            .split('-')
-            .map(color => '#' + color) 
+function getColorsFromHash() {
+   if (document.location.hash.length > 1) {
+      return document.location.hash
+      .substring(1)
+      .split('-')
+      .map(color => '#' + color) 
 
-         } 
-         return []
-      }
+   } 
+   return []
+}
       
-   
-
 setRandomColors(true)
-
